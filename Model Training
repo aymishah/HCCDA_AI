@@ -1,0 +1,39 @@
+# Random Forest Model Training
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Load Dataset
+df = pd.read_csv("TUANDROMD.csv")
+
+# Clean Data (remove rows with missing target labels)
+df = df.dropna(subset=["Label"])
+
+# Split into Features and Target
+X = df.drop("Label", axis=1)
+y = df["Label"]
+
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# Standard Scaling
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Train Random Forest Model
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train_scaled, y_train)
+
+# Evaluate Model
+y_pred = rf_model.predict(X_test_scaled)
+
+# Print Metrics
+print(" Accuracy:", accuracy_score(y_test, y_pred))
+print("\n Classification Report:\n", classification_report(y_test, y_pred))
+print("\n Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
