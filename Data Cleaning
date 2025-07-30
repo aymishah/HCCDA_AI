@@ -1,0 +1,11 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Load Dataset
+df = pd.read_csv("TUANDROMD.csv")
+
+# Clean Data (remove rows with missing target labels)
+df = df.dropna(subset=["Label"])
