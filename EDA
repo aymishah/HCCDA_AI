@@ -1,0 +1,29 @@
+# EDA on Full Dataset
+
+
+# Class Distribution
+plt.figure(figsize=(6, 4))
+sns.countplot(x="Label", data=df)
+plt.title("Class Distribution (0 = Goodware, 1 = Malware)")
+plt.xlabel("Label")
+plt.ylabel("Count")
+plt.xticks([0, 1], ['Goodware', 'Malware'])
+plt.tight_layout()
+plt.show()
+
+# Summary Stats
+print("\n📊 Basic Statistics:")
+print(df.describe().T[['mean', 'std', 'min', 'max']].head(10))
+
+# Correlation with Label
+corr = df.corr()
+top_corr = corr["Label"].abs().sort_values(ascending=False)[1:11]
+print("\n🔗 Top 10 Correlated Features:\n", top_corr)
+
+# Heatmap for Top Features
+plt.figure(figsize=(10, 8))
+top_features = top_corr.index.tolist() + ["Label"]
+sns.heatmap(df[top_features].corr(), annot=True, cmap="coolwarm", fmt=".2f")
+plt.title("Correlation Heatmap of Top Features")
+plt.tight_layout()
+plt.show()
