@@ -1,0 +1,84 @@
+!pip install gradio
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.ensemble import RandomForestRegressor
+import gradio as gr
+
+# ======================================================================
+# 1. Data Loading and Preprocessing
+# ======================================================================
+
+# Upload Kaggle dataset file to Colab first: car data.csv
+df = pd.read_csv("car data.csv")
+
+current_year = 2025
+df['Car_Age'] = current_year - df['Year']
+df.drop(['Year', 'Car_Name'], axis=1, inplace=True)
+
+X = df.drop('Selling_Price', axis=1)
+y = df['Selling_Price']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+numerical_features = X.select_dtypes(include=np.number).columns.tolist()
+categorical_features = X.select_dtypes(include='object').columns.tolist()
+
+numerical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler())
+])
+
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))
+])
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_features),
+        ('cat', categorical_transformer, categorical_features)
+    ],
+    remainder='passthrough'
+)
+
+full_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
+])
+
+full_pipeline.fit(X_train, y_train)
+
+# ======================================================================
+# 2. Gradio Interface
+# ======================================================================
+def predict_price(present_price, kms_driven, year, fuel_type, seller_type, transmission, owner):
+    car_age = current_year - int(year)
+    input_df = pd.DataFrame([[present_price, kms_driven, fuel_type, seller_type, transmission, owner, car_age]],
+                            columns=["Present_Price", "Kms_Driven", "Fuel_Type",
+                                     "Seller_Type", "Transmission", "Owner", "Car_Age"])
+    predicted_price = full_pipeline.predict(input_df)[0]
+    return f"Predicted Price: ₹{predicted_price:.2f} Lakhs"
+
+iface = gr.Interface(
+    fn=predict_price,
+    inputs=[
+        gr.Number(label="Present Price (Lakhs)"),
+        gr.Number(label="Kilometers Driven"),
+        gr.Number(label="Manufacturing Year"),
+        gr.Dropdown(df["Fuel_Type"].unique().tolist(), label="Fuel Type"),
+        gr.Dropdown(df["Seller_Type"].unique().tolist(), label="Seller Type"),
+        gr.Dropdown(df["Transmission"].unique().tolist(), label="Transmission"),
+        gr.Dropdown(sorted(df["Owner"].unique().tolist()), label="Owner")
+    ],
+    outputs="text",
+    title="Car Price Predictor",
+    description="Enter car details to predict selling price."
+)
+
+iface.launch()
